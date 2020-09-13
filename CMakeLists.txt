@@ -16,6 +16,7 @@ include_directories(third-party/rpmalloc)
 include_directories(lib sto-core legacy datatype benchmark)
 
 add_subdirectory(third-party/xxHash)
+add_subdirectory(third-party/rpmalloc)
 add_subdirectory(masstree-beta)
 
 add_subdirectory(lib)
