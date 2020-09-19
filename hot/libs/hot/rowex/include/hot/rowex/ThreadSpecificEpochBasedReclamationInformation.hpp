@@ -5,12 +5,15 @@
 #include <vector>
 
 #include "hot/rowex/HOTRowexChildPointer.hpp"
-
-namespace hot { namespace rowex {
-
+namespace {
 constexpr uint32_t NUMBER_EPOCHS = 3;
 constexpr uint32_t NOT_IN_EPOCH = NUMBER_EPOCHS;
+std::atomic<size_t> mNumberFrees = { 0 };
+};
 
+
+
+namespace hot { namespace rowex {
 class ThreadSpecificEpochBasedReclamationInformation {
 	std::array<std::vector<HOTRowexChildPointer>, NUMBER_EPOCHS> mFreeLists;
 	std::atomic<uint32_t> mLocalEpoch;
@@ -18,7 +21,6 @@ class ThreadSpecificEpochBasedReclamationInformation {
 	bool mThreadWantsToAdvance;
 
 public:
-	static std::atomic<size_t> mNumberFrees;
 
 	ThreadSpecificEpochBasedReclamationInformation() : mFreeLists(), mLocalEpoch(NOT_IN_EPOCH), mPreviouslyAccessedEpoch(NOT_IN_EPOCH), mThreadWantsToAdvance(false)  {
 	}
@@ -72,7 +74,7 @@ private:
 	}
 };
 
-std::atomic<size_t> ThreadSpecificEpochBasedReclamationInformation::mNumberFrees { 0 };
+
 
 }}
 

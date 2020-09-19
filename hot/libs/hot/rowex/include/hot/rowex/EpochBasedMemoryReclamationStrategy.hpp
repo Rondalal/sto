@@ -10,12 +10,15 @@
 
 #include "hot/rowex/ThreadSpecificEpochBasedReclamationInformation.hpp"
 
+namespace{
+uint32_t NEXT_EPOCH[3] = { 1, 2, 0 };
+uint32_t PREVIOUS_EPOCH[3] = { 2, 0, 1 };
+};
 
-namespace hot { namespace rowex {
+
+namespace hot::rowex {
 
 class EpochBasedMemoryReclamationStrategy {
-	static uint32_t NEXT_EPOCH[3];
-	static uint32_t PREVIOUS_EPOCH[3];
 
 	std::atomic<uint32_t> mCurrentEpoch;
 	tbb::enumerable_thread_specific<ThreadSpecificEpochBasedReclamationInformation, tbb::cache_aligned_allocator<ThreadSpecificEpochBasedReclamationInformation>, tbb::ets_key_per_instance> mThreadSpecificInformations;
@@ -57,10 +60,7 @@ public:
 	}
 };
 
-uint32_t EpochBasedMemoryReclamationStrategy::NEXT_EPOCH[3] = { 1, 2, 0 };
-uint32_t EpochBasedMemoryReclamationStrategy::PREVIOUS_EPOCH[3] = { 2, 0, 1 };
-
-} }
+}
 
 
 

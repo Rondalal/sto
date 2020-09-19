@@ -361,7 +361,8 @@ std::pair<size_t, std::map<std::string, double>> HOTRowex<ValueType, KeyExtracto
 
 	std::map<std::string, double> statistics;
 	statistics["height"] = mRoot.getHeight();
-	statistics["numberFrees"] = ThreadSpecificEpochBasedReclamationInformation::mNumberFrees;
+//	statistics["numberFrees"] = ThreadSpecificEpochBasedReclamationInformation::mNumberFrees;
+    statistics["numberFrees"] = mNumberFrees;
 
 	size_t overallLeafNodeCount = 0;
 	for(auto leafNodesOnDepth : leafNodesPerDepth) {
