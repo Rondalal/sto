@@ -15,6 +15,7 @@ set(contenthelpers-HEADERS ${contenthelpers-HEADERS} ${HDR_DIRECTORY}/KeyCompara
 set(contenthelpers-HEADERS ${contenthelpers-HEADERS} ${HDR_DIRECTORY}/KeyUtilities.hpp)
 set(contenthelpers-HEADERS ${contenthelpers-HEADERS} ${HDR_DIRECTORY}/TidConverters.hpp)
 set(contenthelpers-HEADERS ${contenthelpers-HEADERS} ${HDR_DIRECTORY}/ValueToKeyTypeMapper.hpp)
+set(contenthelpers-HEADERS ${contenthelpers-HEADERS} ${HDR_DIRECTORY}/STOKeyExtractor.hpp)
 
 add_library(content-helpers-lib INTERFACE)
 target_sources(content-helpers-lib INTERFACE ${contenthelpers-HEADERS})

@@ -85,15 +85,14 @@ template<typename Operation> inline auto HOTRowexChildPointer::executeForSpecifi
 	}
 }
 
-inline HOTRowexChildPointer::HOTRowexChildPointer() : mPointer(reinterpret_cast<intptr_t>(nullptr)) {
-}
+inline HOTRowexChildPointer::HOTRowexChildPointer() : mPointer(reinterpret_cast<intptr_t>(nullptr)){}
 
-inline HOTRowexChildPointer::HOTRowexChildPointer(HOTRowexChildPointer const & other) : mPointer(other.mPointer.load(read_memory_order)) {
+inline HOTRowexChildPointer::HOTRowexChildPointer(HOTRowexChildPointer const & other) : mPointer(other.mPointer.load(read_memory_order)), version(other.version), ticTocVersion(other.ticTocVersion){
 }
 
 
 inline HOTRowexChildPointer::HOTRowexChildPointer(hot::commons::NodeType nodeAlgorithmType, HOTRowexNodeBase const *node)
-	: mPointer((reinterpret_cast<intptr_t>(node) | static_cast<intptr_t>(nodeAlgorithmType)) << 1) {
+	: mPointer((reinterpret_cast<intptr_t>(node) | static_cast<intptr_t>(nodeAlgorithmType)) << 1){
 }
 
 inline HOTRowexChildPointer::HOTRowexChildPointer(intptr_t leafValue)

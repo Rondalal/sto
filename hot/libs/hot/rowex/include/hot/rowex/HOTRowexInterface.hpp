@@ -78,8 +78,9 @@ template<typename ValueType, template <typename> typename KeyExtractor> struct H
 	 * @return true if the value can be inserted, false if the index already contains a value for the corresponding key
 	 */
 	inline bool insert(ValueType const & value);
+	inline std::pair<bool, ValueType> insertWithValue(ValueType const & value);
 private:
-	inline bool insertGuarded(ValueType const & value);
+    inline std::pair<bool, ValueType> insertGuarded(ValueType const & value);
 
 public:
 	/**

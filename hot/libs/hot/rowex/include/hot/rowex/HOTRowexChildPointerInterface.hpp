@@ -5,6 +5,8 @@
 #include <set>
 
 #include <hot/commons/NodeType.hpp>
+#include <OCCVersions.hh>
+#include "TicTocVersions.hh"
 
 namespace hot { namespace rowex {
 
@@ -193,6 +195,12 @@ public:
 	 * deletes all nodes contained in this subtree, including this node itself
 	 */
 	inline void deleteSubtree();
+
+    /**
+    * Adding support in STO. Each of the nodes have to support a version
+    */
+    TVersion version;
+    TicTocVersion<> ticTocVersion;
 
 private:
 	inline bool isLeaf(intptr_t currentPointerValue) const;

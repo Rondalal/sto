@@ -82,11 +82,18 @@ template<typename ValueType, template <typename> typename KeyExtractor> inline i
 
 template<typename ValueType, template <typename> typename KeyExtractor> inline bool HOTRowex<ValueType, KeyExtractor>::insert(ValueType const & value) {
 	MemoryGuard guard(mMemoryReclamation);
-	return insertGuarded(value);
+	return insertGuarded(value).first;
 }
 
-template<typename ValueType, template <typename> typename KeyExtractor> inline bool HOTRowex<ValueType, KeyExtractor>::insertGuarded(ValueType const & value) {
+template<typename ValueType, template <typename> typename KeyExtractor> inline std::pair<bool, ValueType> HOTRowex<ValueType, KeyExtractor>::insertWithValue(ValueType const & value) {
+    MemoryGuard guard(mMemoryReclamation);
+    return insertGuarded(value);
+}
+
+
+template<typename ValueType, template <typename> typename KeyExtractor> inline std::pair<bool, ValueType> HOTRowex<ValueType, KeyExtractor>::insertGuarded(ValueType const & value) {
 	idx::contenthelpers::OptionalValue<bool> insertionResult;
+    idx::contenthelpers::OptionalValue<ValueType> oldValue;
 
 	auto const & fixedSizeKey = idx::contenthelpers::toFixSizedKey(idx::contenthelpers::toBigEndianByteOrder(extractKey(value)));
 	uint8_t const* keyBytes = idx::contenthelpers::interpretAsByteArray(fixedSizeKey);
@@ -101,8 +108,12 @@ template<typename ValueType, template <typename> typename KeyExtractor> inline b
 				keyBytes);
 			if (mismatchingBit.mIsValid) {
 				insertionResult = insertNewValue(insertStack, mismatchingBit.mValue, value);
+				oldValue = idx::contenthelpers::OptionalValue<ValueType>(false, NULL);
 			} else {
-				insertionResult = {true, false };
+                ValueType const & existingValue = idx::contenthelpers::tidToValue<ValueType>(insertStack.mLeafEntry->getChildPointer().getTid());
+                bool isValid = idx::contenthelpers::contentEquals(extractKey(value), extractKey(existingValue));
+				insertionResult = {true, false};
+                oldValue = idx::contenthelpers::OptionalValue<ValueType>(isValid, value);
 			}
 		} else if (currentRoot.isLeaf()) {
 			HOTRowexChildPointer valueToInsert(idx::contenthelpers::valueToTid(value));
@@ -115,15 +126,20 @@ template<typename ValueType, template <typename> typename KeyExtractor> inline b
 			if (mismatchingBit.mIsValid) {
 				HOTRowexChildPointer const & newRoot = hot::commons::createTwoEntriesNode<HOTRowexChildPointer, HOTRowexNode>(hot::commons::BiNode<HOTRowexChildPointer>::createFromExistingAndNewEntry(mismatchingBit.mValue, mRoot, valueToInsert))->toChildPointer();
 				insertionResult = { mRoot.compareAndSwap(currentRoot, newRoot) , true};
+                oldValue = {false, NULL};
 			} else {
-				insertionResult = {true, false };
-			}
+                currentRoot = *(currentRoot.search(keyBytes));
+                ValueType const & existedValue = idx::contenthelpers::tidToValue<ValueType>(currentRoot.getTid());
+                bool isValid = idx::contenthelpers::contentEquals(extractKey(value), extractKey(existedValue));
+                insertionResult = {true, false};
+                oldValue = idx::contenthelpers::OptionalValue<ValueType>(isValid, existedValue);
+            }
 		} else {
 			HOTRowexChildPointer newValue(idx::contenthelpers::valueToTid(value));
 			insertionResult = { mRoot.compareAndSwap(currentRoot, newValue), true };
 		}
 	}
-	return insertionResult.mValue;
+	return std::make_pair(insertionResult.mValue, oldValue.mValue);
 }
 
 template<typename ValueType, template <typename> typename KeyExtractor> inline idx::contenthelpers::OptionalValue<ValueType> HOTRowex<ValueType, KeyExtractor>::upsert(ValueType newValue) {
