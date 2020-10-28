@@ -604,8 +604,8 @@ public:
 
 private:
     static constexpr unsigned tset_chunk = 512;
-    static constexpr unsigned tset_max_capacity = 32768;
-
+//  static constexpr unsigned tset_max_capacity = 32768;
+    static constexpr unsigned tset_max_capacity = 512000;
     void initialize();
 
     Transaction()
