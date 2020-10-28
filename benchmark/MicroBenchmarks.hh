@@ -22,9 +22,9 @@ namespace ubench {
 using namespace db_params;
 using bench::db_profiler;
 
-enum class DsType : int {none, masstree};
+enum class DsType : int {none, masstree, hot};
 
-const char *datatype_names[] = {"none", "masstree"};
+const char *datatype_names[] = {"none", "masstree", "hot"};
 
 inline DsType parse_datatype(const char *s) {
     if (s == nullptr)
@@ -378,6 +378,9 @@ struct MasstreeIntKey {
         return lcdf::Str((const char *)this, sizeof(*this));
     }
 
+    inline bool operator==(const MasstreeIntKey<IntType>& lhs) {
+        return lhs.k_ == k_;
+    }
     IntType k_;
 };
 
@@ -441,6 +444,81 @@ private:
     index_type mt_;
 };
 
+template <typename WLImpl, typename DBParams>
+class HotTester : public Tester<HotTester<WLImpl, DBParams>, WLImpl> {
+    public:
+        typedef Tester<HotTester<WLImpl, DBParams>, WLImpl> Base;
+        typedef MasstreeIntKey<sampling::index_t> key_type;
+
+        //    Will be ran with each of the options in granularity_benchmark.txt
+        typedef typename compute_value_type<WLImpl::RTParams::granules>::type value_type;
+        //    NC will be a value of enum (f1, f2, etc.) for each column
+        typedef typename value_type::NamedColumn nc;
+        typedef typename bench::hot_index<key_type, value_type, DBParams> index_type;
+        typedef typename bench::access_t access_t;
+        typedef std::pair<key_type*, value_type*> kv_pair;
+        std::vector<kv_pair> vector;
+
+        explicit HotTester(size_t num_threads) : Base(num_threads), mt_() {}
+
+        void prepopulate_impl() {
+            for (unsigned int i = 0; i < params.key_sz; ++i){
+                auto val = new value_type({i, i, i, i, i, i, i, i});
+                auto k = new key_type(i);
+                vector.push_back(kv_pair(k,val));
+                mt_.nontrans_put(*k, *val);
+            }
+
+        }
+
+        void thread_init_impl() {
+            mt_.thread_init();
+        }
+
+        bool do_op_impl(const RWOperation& op) {
+            bool success;
+            switch(op.type) {
+                case OpType::read:
+                    std::tie(success, std::ignore, std::ignore, std::ignore)
+                            = mt_.select_row(key_type(op.key),
+                                             {{nc::f1, access_t::read}, {nc::f3, access_t::read}, {nc::f5, access_t::read}, {nc::f7, access_t::read}});
+                    break;
+                case OpType::write: {
+                    auto v = Sto::tx_alloc<value_type>();
+                    *v = {op.value, op.value, op.value, op.value, op.value, op.value, op.value, op.value};
+                    std::tie(success, std::ignore) = mt_.insert_row(key_type(op.key), v, true);
+                    break;
+                }
+                case OpType::inc: {
+                    uintptr_t rid;
+                    const value_type* value;
+                    std::tie(success, std::ignore, rid, value)
+                            = mt_.select_row(key_type(op.key),
+                                             {{nc::f1, access_t::update}, {nc::f3, access_t::update}, {nc::f5, access_t::update}, {nc::f7, access_t::update}});
+                    if (!success)
+                        break;
+                    value_type *new_v = Sto::tx_alloc(value);
+                    new_v->f1 += 1;
+                    new_v->f3 += 1;
+                    new_v->f5 += 1;
+                    new_v->f7 += 1;
+                    mt_.update_row(rid, new_v);
+                    break;
+                }
+            }
+            return success;
+        }
+
+        ~HotTester() {
+            for (auto pair : vector) {
+                delete pair.first;
+                delete pair.second;
+            }
+        }
+    private:
+        index_type mt_;
+    };
+
 template <DsType DS, typename WLImpl, typename DBParams>
 struct TesterSelector {};
 
@@ -449,11 +527,17 @@ struct TesterSelector<DsType::masstree, WLImpl, DBParams> {
     typedef MasstreeTester<WLImpl, DBParams> type;
 };
 
-template <int G, typename DBParams>
-using MtZipfTesterDefault = TesterSelector<DsType::masstree, WLZipfRW<wl_default_params<G>>, DBParams>;
+template <typename WLImpl, typename DBParams>
+struct TesterSelector<DsType::hot, WLImpl, DBParams> {
+    typedef HotTester<WLImpl, DBParams> type;
+};
+
 
 template <int G, typename DBParams>
-using MtZipfTesterMeasure = TesterSelector<DsType::masstree, WLZipfRW<wl_measurement_params<G>>, DBParams>;
+using MtZipfTesterDefault = TesterSelector<DsType::hot, WLZipfRW<wl_default_params<G>>, DBParams>;
+
+template <int G, typename DBParams>
+using MtZipfTesterMeasure = TesterSelector<DsType::hot, WLZipfRW<wl_measurement_params<G>>, DBParams>;
 
 };
 
