@@ -291,7 +291,8 @@ void tpcc_runner<DBParams>::run_txn_neworder() {
 
         double ol_amount = qty * i_price/100.0;
 
-        orderline_key olk(q_w_id, q_d_id, dt_next_oid, i + 1);
+
+        orderline_key* olk = new orderline_key(q_w_id, q_d_id, dt_next_oid, i + 1);
 #if TPCC_SPLIT_TABLE
         orderline_const_value *lcv = Sto::tx_alloc<orderline_const_value>();
         orderline_comm_value *lmv = Sto::tx_alloc<orderline_comm_value>();
@@ -318,7 +319,7 @@ void tpcc_runner<DBParams>::run_txn_neworder() {
         olv->ol_amount = ol_amount;
         olv->ol_dist_info = s_dist;
 
-        std::tie(abort, result) = db.tbl_orderlines(q_w_id).insert_row(olk, olv, false);
+        std::tie(abort, result) = db.tbl_orderlines(q_w_id).insert_row(*olk, olv, false);
         CHK(abort);
         assert(!result);
 #endif

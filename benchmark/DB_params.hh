@@ -41,6 +41,7 @@ public:
     static constexpr bool Swiss = false;
     static constexpr bool TicToc = false;
     static constexpr bool MVCC = false;
+    static constexpr bool MassTree = true;
     static constexpr bool NodeTrack = false;
     static constexpr bool Commute = false;
 };

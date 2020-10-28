@@ -147,10 +147,14 @@ class tpcc_access;
 template <typename DBParams>
 class tpcc_db {
 public:
-    template <typename K, typename V>
-    using OIndex = typename std::conditional<DBParams::MVCC,
-          mvcc_ordered_index<K, V, DBParams>,
-          ordered_index<K, V, DBParams>>::type;
+/* Sorry for this horrible nested std::conditional, but there is no option for statically selecting more than two types (it's added only in CPP20)
+ * The selection here is between MVCC, hot_index, and masstree
+ */
+template <typename K, typename V>
+using OIndex =
+typename std::conditional<DBParams::MVCC, mvcc_ordered_index<K, V, DBParams>,
+        typename std::conditional<DBParams::MassTree, ordered_index<K, V, DBParams>,hot_index<K, V, DBParams>>::type
+>::type;
 
 #if TPCC_HASH_INDEX
     template <typename K, typename V>
