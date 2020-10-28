@@ -22,12 +22,17 @@ struct key_type {
     operator lcdf::Str() const {
         return lcdf::Str((const char *)this, sizeof(*this));
     }
+    inline bool operator==(const key_type& lhs) {
+        return lhs.id == id;
+    }
 };
 
 // using example_row from VersionSelector.hh
 
-using CoarseIndex = bench::ordered_index<key_type, coarse_grained_row, db_params::db_default_params>;
-using FineIndex = bench::ordered_index<key_type, example_row, db_params::db_default_params>;
+//using CoarseIndex = bench::ordered_index<key_type, coarse_grained_row, db_params::db_default_params>;
+//using FineIndex = bench::ordered_index<key_type, example_row, db_params::db_default_params>;
+using CoarseIndex = bench::hot_index<key_type, coarse_grained_row, db_params::db_default_params>;
+using FineIndex = bench::hot_index<key_type, example_row, db_params::db_default_params>;
 using access_t = bench::access_t;
 using RowAccess = bench::RowAccess;
 
@@ -36,7 +41,12 @@ using MVIndex = bench::mvcc_ordered_index<key_type, coarse_grained_row, db_param
 template <typename IndexType>
 void init_cindex(IndexType& ci) {
     for (uint64_t i = 1; i <= 10; ++i)
-        ci.nontrans_put(key_type(i), coarse_grained_row(i, i, i));
+    {
+        auto key = new key_type(i);
+        auto value = new coarse_grained_row(i, i, i);
+        ci.nontrans_put(*key, *value);
+    }
+
 }
 
 void init_findex(FineIndex& fi) {
